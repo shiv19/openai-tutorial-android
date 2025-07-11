@@ -240,18 +240,20 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawGlowLayer(
     rotationAngle: Float,
     gradientColors: List<Color>
 ) {
+    val clampedAmplitude = amplitude.coerceAtLeast(0.05f)
+
     // Calculate the actual radius based on amplitude
-    val baseRadius = lerp(baseRadiusMin, baseRadiusMax, amplitude)
+    val baseRadius = lerp(baseRadiusMin, baseRadiusMax, clampedAmplitude)
 
     // Calculate wave range (inverse relationship to amplitude)
-    val waveRange = lerp(waveRangeMax, waveRangeMin, 1 - amplitude)
+    val waveRange = lerp(waveRangeMax, waveRangeMin, 1 - clampedAmplitude)
 
     // Calculate the scale factors
     val shapeWaveSin = sin(2 * PI * time).toFloat()
     val shapeWaveCos = cos(2 * PI * time).toFloat()
 
     // Scale from amplitude
-    val amplitudeScale = 1.0f + scaleRange * amplitude
+    val amplitudeScale = 1.0f + scaleRange * clampedAmplitude
 
     // Final x/y scale = amplitude scale + wave
     val xScale = (amplitudeScale + waveRange * shapeWaveSin)
@@ -259,9 +261,10 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawGlowLayer(
 
     // Draw the oval with gradient
     drawIntoCanvas { canvas ->
+        val safeBaseRadius = baseRadius.coerceAtLeast(1f)
         val paint = androidx.compose.ui.graphics.Paint().asFrameworkPaint().apply {
             shader = RadialGradient(
-                center.x, center.y, baseRadius,
+                center.x, center.y, safeBaseRadius,
                 intArrayOf(
                     gradientColors[0].copy(alpha = 0.9f).toArgb(),
                     gradientColors[1].toArgb()
@@ -287,7 +290,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawGlowLayer(
             center.y + baseRadius * yScale,
             paint
         )
-
+        
         canvas.restore()
     }
 }
