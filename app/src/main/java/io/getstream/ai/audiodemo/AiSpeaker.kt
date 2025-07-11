@@ -240,28 +240,20 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawGlowLayer(
     rotationAngle: Float,
     gradientColors: List<Color>
 ) {
-    // Calculate the actual radius based on amplitude
-    val baseRadius = lerp(baseRadiusMin, baseRadiusMax, amplitude)
-
-    // Calculate wave range (inverse relationship to amplitude)
-    val waveRange = lerp(waveRangeMax, waveRangeMin, 1 - amplitude)
-
-    // Calculate the scale factors
+    val clampedAmplitude = amplitude.coerceAtLeast(0.05f)
+    val baseRadius = lerp(baseRadiusMin, baseRadiusMax, clampedAmplitude)
+    val waveRange = lerp(waveRangeMax, waveRangeMin, 1 - clampedAmplitude)
     val shapeWaveSin = sin(2 * PI * time).toFloat()
     val shapeWaveCos = cos(2 * PI * time).toFloat()
-
-    // Scale from amplitude
-    val amplitudeScale = 1.0f + scaleRange * amplitude
-
-    // Final x/y scale = amplitude scale + wave
+    val amplitudeScale = 1.0f + scaleRange * clampedAmplitude
     val xScale = (amplitudeScale + waveRange * shapeWaveSin)
     val yScale = (amplitudeScale + waveRange * shapeWaveCos)
 
-    // Draw the oval with gradient
     drawIntoCanvas { canvas ->
+        val safeBaseRadius = baseRadius.coerceAtLeast(1f)
         val paint = androidx.compose.ui.graphics.Paint().asFrameworkPaint().apply {
             shader = RadialGradient(
-                center.x, center.y, baseRadius,
+                center.x, center.y, safeBaseRadius,
                 intArrayOf(
                     gradientColors[0].copy(alpha = 0.9f).toArgb(),
                     gradientColors[1].toArgb()
@@ -271,15 +263,9 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawGlowLayer(
             )
             alpha = (baseOpacity * 255).toInt()
         }
-
-        // Apply blur
         paint.maskFilter = BlurMaskFilter(blurRadius, BlurMaskFilter.Blur.NORMAL)
-
-        // Save the current state, rotate, draw, and restore
         canvas.save()
         canvas.rotate(rotationAngle, center.x, center.y)
-
-        // Draw the oval with calculated dimensions
         canvas.nativeCanvas.drawOval(
             center.x - baseRadius * xScale,
             center.y - baseRadius * yScale,
@@ -287,7 +273,6 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawGlowLayer(
             center.y + baseRadius * yScale,
             paint
         )
-
         canvas.restore()
     }
 }
